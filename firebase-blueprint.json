@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user profile in the app.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "age": { "type": "number" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "nickname": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "inviteCode": { "type": "string" },
+        "coupleId": { "type": "string" },
+        "relationshipStartDate": { "type": "string", "format": "date-time" },
+        "xp": { "type": "number" },
+        "level": { "type": "number" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "feeling": { "type": "string" },
+        "themeColor": { "type": "string" },
+        "isPremium": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "name", "inviteCode", "createdAt"]
+    },
+    "Couple": {
+      "title": "Couple",
+      "description": "A connection between two users.",
+      "type": "object",
+      "properties": {
+        "user1Id": { "type": "string" },
+        "user2Id": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user1Id", "user2Id", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A chat message between the couple.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "senderId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["text", "image", "voice"] },
+        "mediaUrl": { "type": "string" }
+      },
+      "required": ["text", "senderId", "createdAt", "type"]
+    },
+    "LoveNote": {
+      "title": "Love Note",
+      "description": "A shared daily love note.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "lastEditedBy": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "lastEditedBy", "updatedAt"]
+    },
+    "Game": {
+      "title": "Game",
+      "description": "A game session.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["how-you-feel", "truth-between-us", "how-much-you-know", "intimate-mode"] },
+        "state": { "type": "string" },
+        "turnId": { "type": "string" },
+        "scores": {
+          "type": "object",
+          "properties": {
+            "user1": { "type": "number" },
+            "user2": { "type": "number" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "state", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles."
+    },
+    "/couples/{coupleId}": {
+      "schema": { "$ref": "#/entities/Couple" },
+      "description": "Stores the connection between two users."
+    },
+    "/couples/{coupleId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Chat messages for a couple."
+    },
+    "/couples/{coupleId}/loveNotes/{noteId}": {
+      "schema": { "$ref": "#/entities/LoveNote" },
+      "description": "Shared love notes."
+    },
+    "/couples/{coupleId}/games/{gameId}": {
+      "schema": { "$ref": "#/entities/Game" },
+      "description": "Game sessions."
+    }
+  }
+}

@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isPartner(targetUserId) {
+      let myData = getUserData();
+      return myData.coupleId != null && 
+             get(/databases/$(database)/documents/users/$(targetUserId)).data.coupleId == myData.coupleId;
+    }
+    
+    function isInCouple(coupleId) {
+      let myData = getUserData();
+      return myData.coupleId == coupleId;
+    }
+
+    // ===============================================================
+    // Invite Codes Collection
+    // ===============================================================
+    match /inviteCodes/{code} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.used == false && request.resource.data.used == true;
+    }
+
+    // ===============================================================
+    // Users Collection
+    // ===============================================================
+    match /users/{userId} {
+      // Allow read if it's the user themselves, or their partner
+      allow read: if isOwner(userId) || isPartner(userId);
+      
+      // Allow create if authenticated and creating their own document
+      allow create: if isOwner(userId) 
+                    && request.resource.data.uid == userId
+                    && request.resource.data.keys().hasAll(['uid', 'email', 'name', 'inviteCode', 'createdAt']);
+                    
+      // Allow update if owner. Protect coupleId (can only be set once or cleared)
+      allow update: if isOwner(userId)
+                    && request.resource.data.uid == userId;
+    }
+
+    // ===============================================================
+    // Couples Collection
+    // ===============================================================
+    match /couples/{coupleId} {
+      // Read if user is part of the couple
+      allow read: if isAuthenticated() && (resource.data.user1Id == request.auth.uid || resource.data.user2Id == request.auth.uid);
+      
+      // Create if user is one of the partners
+      allow create: if isAuthenticated() 
+                    && (request.resource.data.user1Id == request.auth.uid || request.resource.data.user2Id == request.auth.uid)
+                    && request.resource.data.keys().hasAll(['user1Id', 'user2Id', 'createdAt']);
+                    
+      // Update if user is part of the couple
+      allow update: if isAuthenticated() && (resource.data.user1Id == request.auth.uid || resource.data.user2Id == request.auth.uid);
+
+      // Delete if user is part of the couple
+      allow delete: if isAuthenticated() && (resource.data.user1Id == request.auth.uid || resource.data.user2Id == request.auth.uid);
+
+      // Subcollections
+      match /messages/{messageId} {
+        allow read, write: if isInCouple(coupleId);
+      }
+      
+      match /loveNotes/{noteId} {
+        allow read, write: if isInCouple(coupleId);
+      }
+      
+      match /games/{gameId} {
+        allow read, write: if isInCouple(coupleId);
+      }
+    }
+  }
+}
